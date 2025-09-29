@@ -1,0 +1,95 @@
+const express = require('express');
+const router = express.Router();
+const Review = require('../models/Review');
+const Station = require('../models/Station');
+const Coupon = require('../models/Coupon');
+const User = require('../models/User');
+const auth = require('../middleware/auth');
+const admin = require('../middleware/admin');
+
+const { v4: uuidv4 } = require('uuid');
+
+// Dashboard stats
+router.get('/stats', auth, admin, async (req, res) => {
+  const totalReviews = await Review.countDocuments();
+  const totalStations = await Station.countDocuments();
+  const totalCoupons = await Coupon.countDocuments();
+  const avgRating = await Review.aggregate([
+    { $group: { _id: null, avg: { $avg: '$rating' } } }
+  ]);
+  // Get all stations with their reviews
+  const stations = await Station.find();
+  const stationReviews = {};
+  for (const s of stations) {
+    const reviews = await Review.find({ station: s._id }).populate('user');
+    stationReviews[s._id] = reviews;
+  }
+  const topStations = await Station.aggregate([
+    { $lookup: { from: 'reviews', localField: '_id', foreignField: 'station', as: 'reviews' } },
+    { $addFields: { avgRating: { $avg: '$reviews.rating' }, reviewCount: { $size: '$reviews' } } },
+    { $sort: { avgRating: -1, reviewCount: -1 } },
+    { $limit: 5 }
+  ]);
+  const lowStations = await Station.aggregate([
+    { $lookup: { from: 'reviews', localField: '_id', foreignField: 'station', as: 'reviews' } },
+    { $addFields: { avgRating: { $avg: '$reviews.rating' }, reviewCount: { $size: '$reviews' } } },
+    { $sort: { avgRating: 1, reviewCount: -1 } },
+    { $limit: 5 }
+  ]);
+  res.json({
+    totalReviews,
+    totalStations,
+    totalCoupons,
+    avgRating: avgRating[0]?.avg || 0,
+    topStations,
+    lowStations,
+    stationReviews
+  });
+});
+
+// List all reviews (with filters)
+router.get('/reviews', auth, admin, async (req, res) => {
+  const { stationId, flagged } = req.query;
+  const filter = {};
+  if (stationId) filter.station = stationId;
+  if (flagged) filter.flagged = flagged === 'true';
+  const reviews = await Review.find(filter).populate('user station');
+  res.json(reviews);
+});
+
+// Flag/unflag review
+router.post('/reviews/:id/flag', auth, admin, async (req, res) => {
+  const review = await Review.findById(req.params.id);
+  if (!review) return res.status(404).json({ msg: 'Review not found' });
+  review.flagged = !review.flagged;
+  await review.save();
+  res.json({ flagged: review.flagged });
+});
+
+// List all coupons
+router.get('/coupons', auth, admin, async (req, res) => {
+  const coupons = await Coupon.find().populate('user station review');
+  res.json(coupons);
+});
+
+// Manual coupon generation (admin)
+router.post('/coupons', auth, admin, async (req, res) => {
+  const { userId, reviewId, stationId } = req.body;
+  if (!userId || !stationId) return res.status(400).json({ msg: 'userId and stationId required' });
+  try {
+    const code = uuidv4();
+    const coupon = new Coupon({ code, user: userId, review: reviewId, station: stationId });
+    await coupon.save();
+    res.json({ msg: 'Coupon generated', coupon });
+  } catch (err) {
+    res.status(500).json({ msg: 'Server error' });
+  }
+});
+
+// Audit trail (review logs)
+router.get('/audit', auth, admin, async (req, res) => {
+  const reviews = await Review.find().populate('user station');
+  res.json(reviews);
+});
+
+module.exports = router;

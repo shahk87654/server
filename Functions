@@ -1,0 +1,36 @@
+Here are the main links for each functionality in your Aramco Review Platform:
+
+User-Facing
+Home (Station Selection):
+http://localhost:3000/
+
+Login:
+http://localhost:3000/login
+
+Register:
+http://localhost:3000/register
+
+Review a Station:
+http://localhost:3000/review/[stationId]
+(Replace [stationId] with the actual station ID.)
+
+Reward Page (after 5th review):
+http://localhost:3000/reward/[couponCode]
+(Replace [couponCode] with the actual code.)
+
+My Rewards (see all earned coupons):
+http://localhost:3000/my-rewards
+
+Search Rewards by Phone (for users or staff):
+http://localhost:3000/reward-search
+
+Admin CRM
+Admin Dashboard (analytics):
+http://localhost:3000/admin/dashboard
+
+All Reviews (sorted by station):
+http://localhost:3000/admin/reviews
+
+Staff/Station
+Reward QR/Coupon Scan (claim/validate):
+http://localhost:3000/reward-scan

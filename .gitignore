@@ -1,0 +1,36 @@
+# Node
+node_modules/
+.env
+npm-debug.log*
+
+# Build
+client/build/
+server/build/
+
+# Logs
+logs/
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# VSCode
+.vscode/
+
+# Coverage
+coverage/
+
+# Misc
+*.local
+*.cache
+
+# React
+client/.env.local
+client/.env.development.local
+client/.env.test.local
+client/.env.production.local
+
+# MongoDB
+*.mongodb
+*.db
