@@ -7,19 +7,33 @@
     "dev": "nodemon index.js"
   },
   "dependencies": {
+    "axios": "^1.6.0",
     "bcryptjs": "^2.4.3",
+    "connect-mongo": "^5.1.0",
     "cors": "^2.8.5",
-    "dotenv": "^16.0.0",
-    "express": "^4.18.2",
+    "dotenv": "^16.6.1",
+    "express": "^4.21.2",
+    "express-mongo-sanitize": "^2.2.0",
     "express-rate-limit": "^6.7.0",
+    "express-session": "^1.18.2",
+    "express-slow-down": "^3.0.0",
     "express-validator": "^7.0.1",
+    "helmet": "^8.1.0",
     "jsonwebtoken": "^9.0.0",
+    "mongodb": "^6.20.0",
     "mongoose": "^7.0.0",
     "qrcode": "^1.5.1",
     "uuid": "^9.0.0",
-    "axios": "^1.6.0"
+    "xss-clean": "^0.1.4"
   },
   "devDependencies": {
     "nodemon": "^3.0.0"
-  }
+  },
+  "description": "This is the Express backend for the Aramco station review and admin CRM platform.",
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}
+"scripts": {
+  "start": "node index.js"
 }

@@ -3,10 +3,9 @@ const router = express.Router();
 const { body, validationResult } = require('express-validator');
 const Review = require('../models/Review');
 const Station = require('../models/Station');
-const User = require('../models/User');
 const Coupon = require('../models/Coupon');
-const auth = require('../middleware/auth');
 const { v4: uuidv4 } = require('uuid');
+const { reviewLimiter } = require('../middleware/security');
 
 // Helper: check if user can review this station today
 async function canReview(userId, stationId, deviceId) {
@@ -24,19 +23,18 @@ async function canReview(userId, stationId, deviceId) {
 }
 
 // Submit review
-router.post('/', auth, [
-  body('stationId').notEmpty(),
+router.post('/', reviewLimiter, [
+  body('stationId').notEmpty().trim().escape(),
   body('rating').isInt({ min: 1, max: 5 }),
-  body('comment').optional().isString(),
-  body('name').notEmpty(),
-  body('contact').notEmpty(),
+  body('comment').optional().isString().trim().escape(),
+  body('name').notEmpty().trim().escape().isLength({ min: 2, max: 50 }),
+  body('contact').notEmpty().trim().escape().isLength({ min: 5, max: 50 }),
   body('gps').optional(),
-  body('deviceId').optional()
+  body('deviceId').optional().trim().escape()
 ], async (req, res) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
   const { stationId, rating, cleanliness, serviceSpeed, staffFriendliness, comment, name, contact, gps, deviceId } = req.body;
-  const userId = req.user.id;
   try {
     const station = await Station.findOne({ stationId });
     if (!station) return res.status(404).json({ msg: 'Station not found' });
@@ -56,7 +54,6 @@ router.post('/', auth, [
     }
     // Create review
     const review = new Review({
-      user: userId,
       station: station._id,
       rating,
       cleanliness,
@@ -70,18 +67,14 @@ router.post('/', auth, [
       gps
     });
     await review.save();
-    await User.findByIdAndUpdate(userId, { $push: { reviews: review._id } });
-    // Reward logic
-    const user = await User.findById(userId);
-    // Count all reviews for this user/contact (for accurate visit count)
+    
+    // Reward logic based on contact/phone number
     const phone = req.body.contact;
-    const usersWithPhone = await User.find({ phone });
-    const userIds = usersWithPhone.map(u => u._id);
-    const visits = await Review.countDocuments({ $or: [ { contact: phone }, { user: { $in: userIds } } ] });
+    const visits = await Review.countDocuments({ contact: phone });
     let coupon = null;
     if (visits % 5 === 0) {
       const code = uuidv4();
-      coupon = new Coupon({ code, user: userId, review: review._id, station: station._id });
+      coupon = new Coupon({ code, review: review._id, station: station._id });
       await coupon.save();
       review.rewardGiven = true;
       await review.save();

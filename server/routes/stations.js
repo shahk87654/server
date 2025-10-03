@@ -43,7 +43,8 @@ router.post('/', [
     });
     await station.save();
     // Generate QR code for station
-    const qr = await QRCode.toDataURL(`https://yourdomain.com/review/${station.stationId}`);
+    const baseUrl = process.env.CLIENT_URL || 'http://localhost:3000';
+    const qr = await QRCode.toDataURL(`${baseUrl}/review/${station.stationId}`);
     station.qrCode = qr;
     await station.save();
     res.json(station);

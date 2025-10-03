@@ -1,7 +1,9 @@
 const express = require('express');
 const router = express.Router();
 const User = require('../models/User');
-
+const Review = require('../models/Review');
+const Coupon = require('../models/Coupon');
+const Station = require('../models/Station');
 
 // GET /api/rewards/profile?... 
 router.get('/profile', async (req, res) => {
@@ -20,9 +22,6 @@ router.get('/profile', async (req, res) => {
   }
   res.json({ name, contact, email, phone });
 });
-const Review = require('../models/Review');
-const Coupon = require('../models/Coupon');
-const Station = require('../models/Station');
 
 // GET /api/rewards/search?phone=...
 router.get('/search', async (req, res) => {
@@ -65,6 +64,26 @@ router.post('/claim', async (req, res) => {
   coupon.used = true;
   await coupon.save();
   res.json({ msg: 'Coupon claimed', coupon });
+});
+
+module.exports = router;
+const express = require("express");
+const User = require("../models/User");
+const router = express.Router();
+
+// Give points to user
+router.post("/add-points", async (req, res) => {
+  try {
+    const { email, points } = req.body;
+    const user = await User.findOneAndUpdate(
+      { email },
+      { $inc: { points } },
+      { new: true, upsert: true }
+    );
+    res.json(user);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 module.exports = router;
